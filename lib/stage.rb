@@ -1,15 +1,21 @@
 class Stage 
-  attr_reader :id, :name
-  @@stages = {}
-  @@id_count = 0
+  attr_reader :id
+  attr_accessor :name
 
-  def initialize(name, id)
-    @name = name
-    @id = id || @@id_count +=1
+  def initialize(attributes)
+    @name = attributes.fetch(:name)
+    @id = attributes.fetch(:id)
   end
 
   def self.all
-    @@stages.values()
+    returned_stages = DB.exec("select * FROM stages;")
+    stages = []
+    returned_stages.each() do |stage|
+      name = stage.fetch("name")
+      id = stage.fetch("id").to_i
+      stages.push(Stage.new({:name => name, :id => id}))
+    end
+    stages
   end
 
   def ==(stage_to_compare)
@@ -17,23 +23,31 @@ class Stage
   end
 
   def save
-    @@stages[self.id] = Stage.new(self.name, self.id)
+    result = DB.exec("INSERT INTO stages (name) VALUES ('#{@name}') RETURNING id;")
+    @id = result.first().fetch("id").to_i
   end
 
   def self.clear
-    @@stages = {}
-    @@id_count = 0
+    DB.exec("DELETE FROM stages *;")
   end
 
   def self.find(id)
-    @@stages[id]
+    stage = DB.exec("SELECT * FROM stages WHERE id = #{id};").first
+    name = stage.fetch("name")
+    id = stage.fetch("id").to_i
+    Stage.new({:name => name, :id => id})
   end
 
   def update(name)
     @name = name
+    DB.exec("UPDATE stages SET name = '#{@name}' WHERE id = #{@id};")
   end
 
   def delete 
-    @@stages.delete(self.id)
+    DB.exec("DELETE FROM stages WHERE id = #{@id};")
+  end
+
+  def actor
+    Actor.find_by_stage(self.id)
   end
 end

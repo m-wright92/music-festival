@@ -1,8 +1,12 @@
 require('sinatra')
 require('sinatra/reloader')
 require('./lib/stage')
+require('./lib/actor')
 require('pry')
+require('pg')
 also_reload('lib/**/*.rb')
+
+DB = PG.connect({:dbname => "music_festival"})
 
 get('/') do
   @stages = Stage.all
